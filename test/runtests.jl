@@ -2,5 +2,5 @@ using MatrixCoalescent
 using Test
 
 @testset "MatrixCoalescent.jl" begin
-    # Write your tests here.
+    @test sqr(2) == 4
 end
