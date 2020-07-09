@@ -82,7 +82,7 @@ mutable struct BitsLTriMatrix{N,M,T} <: AbstrLTriMatrix
 end
 
 @inline function Base.size(A::AbstrLTriMatrix) where {N,M,T}
-    dim = length(a.offset)
+    dim = length(A.offset)
     (dim, dim)
 end
 
