@@ -1,7 +1,5 @@
 module MatrixCoalescent
 
-using LinearAlgebra
-
 mutable struct MatCoal{F<:AbstractFloat,S<:Signed}
     nLin :: Int # number of lineages in epoch
 
