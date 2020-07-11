@@ -1,14 +1,20 @@
 using StaticArrays
 
-abstract type AbstrLTriMatrix end;
+abstract type AbstrLTriMatrix end
 
 """
     LTriMatrix(dim, x)
 
 A lower-triangular matrix of dimension `dim X dim`, whose entries have
 the same type as `x`. The parameter `x` is used only for its type. Its
-value is not used. The entries of the matrix are initialized with
-zeroes.
+value is not used. A matrix is constructed with a call such as
+
+    a = LTriMatrix(4, BigInt(1))
+
+which generates a 4X4 lower triangular matrix whose entries are of
+type BigInt. Then, a[4,3] returns the entry at row 4, column 3, and
+a[4,3] throws a BoundsError. The entries of the matrix are initialized
+with zeroes.
 
 For values such that `isbits(x)` is true, use BitsLTriMatrix, which is
 faster.
@@ -56,6 +62,14 @@ A lower-triangular matrix of dimension `dim X dim`, whose entries have
 the same type as `x`. The parameter `x` is used only for its type. Its
 value is not used. The type of x must be a bits type, so
 that `isbits(x)` returns `true`.
+
+A matrix is constructed with a call such as
+
+    a = LTriMatrix(4, 1.0)
+
+which generates a 4X4 lower triangular matrix whose entries are of
+type Float64. Then, a[4,3] returns the entry at row 4, column 3, and
+a[4,3] throws a BoundsError. 
 """
 mutable struct BitsLTriMatrix{N,M,T} <: AbstrLTriMatrix
     data :: MVector{M,T}     # elements in matrix
@@ -64,7 +78,7 @@ mutable struct BitsLTriMatrix{N,M,T} <: AbstrLTriMatrix
     function BitsLTriMatrix(dim, x)
         t = typeof(x) # element type
         !isbitstype(t) && throw(DomainError(t,
-            "LTriMatrix can only hold bitstype values."))
+            "BitsLTriMatrix can only hold bitstype values."))
         n = Int(dim)
         m = (n*(n+1)) ÷ 2
         mat = new{n, m, t}()
