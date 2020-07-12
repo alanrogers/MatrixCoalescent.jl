@@ -127,7 +127,7 @@ function Base.show(io::IO, mc::MatCoal)
     println(io, mc.gmat)
     println(io, "hmat:")
     println(io, mc.hmat)
-    println(io, "z:")
+    print(io, "z:")
     for z in mc.z
         print(io, " ", z)
     end
