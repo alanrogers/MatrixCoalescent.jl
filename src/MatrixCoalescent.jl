@@ -2,48 +2,41 @@ using StaticArrays
 
 module MatrixCoalescent
 
-include("UTriMatrix.jl")
-
 export MatCoal
 
 """
-N is the dimension: 1 less than the number of lineages in this
-epoch of population history.
-
-F is the type of the entries in G.
+An object of type MatCoal holds the data needed to calculate two
+quantities under the matrix coalescent: (1) the probability that there
+are k lineages at the ancient end of an epoch, given that there are
+nLineages at the recent end, and (2) the expected duration of the
+subinterval during which there are k lineages.
 """
-mutable struct MatCoal{N,M,T<:AbstractFloat}
-    nLin :: Int # number of lineages in epoch
+mutable struct MatCoal{T<:AbstractFloat}
+    nLineages :: Int # number of lineages at recent end of epoch
 
     # Vector of dimension nLin-1. beta[i] is (i+1) choose 2.  For
-    # example, if nLin=3, then beta has two entries: 2 choose 2 and 3
+    # example, if nLineages=3, then beta has two entries: 2 choose 2 and 3
     # choose 2.
     beta :: Vector{T}
 
-    # Matrix of scaled column eigenvectors
-    gmat :: UTriMatrix{N,M,T}
-
-    # Matrix for calculating expected lengths of coalescent intervals
-    hmat :: UTriMatrix{N,M,T}
-
     # Vector for calculating E[len] of coalescent intervals
-    z :: Vector{T}
+    # Negative reciprocal of beta.
+    nrbeta :: Vector{T}
+
+    # Matrix of scaled column eigenvectors (upper triangular)
+    gmat :: Matrix{T}
+
+    # Matrix for calculating expected lengths of coalescent intervals.
+    # Also upper triangular
+    hmat :: Matrix{T}
 end
 
 """
 Outer constructor
 """
-function MatCoal(nLineages, x)
+function MatCoal(float_type::DataType, nLineages)
     nLin = Int(nLineages)
     n = nLin - 1
-    float_type = typeof(x)
-
-    beta = Vector{float_type}(undef, n)
-    for i in 1:n
-        beta[i] = (i*(i+1))/2
-    end
-
-    gmat = UTriMatrix(n, x)
 
     # Column eigenvectors and row eigenvectors
     cvec = zeros(Rational{Int}, n, n)
@@ -64,74 +57,116 @@ function MatCoal(nLineages, x)
         end
     end
 
-    # Calculate coefficients of exponentials in x(t).
-    # Convert to floating point and store in gmat.
+    # Calculate coefficients of exponentials in x(t).  This will be
+    # converted to float to produce the the matrix gmat.
     for ii in 1:n
         for jj in ii:n
             cvec[ii,jj] *= rvec[jj, n]
-            gmat[ii, jj] = convert(float_type, cvec[ii, jj])
         end
     end
 
-    # beta[i] is (i+1) choose 2.
-    # nrbeta is the negative of reciprocal of beta.
+    # nrbeta[i] is negative reciprocal of beta[i] = (i+1) choose 2.
+    beta = Vector{Rational{Int}}(undef, n)
     nrbeta = Vector{Rational{Int}}(undef, n)
     for i in 1:n
         j = i+1
-        nrbeta[i] = -1 // (j*(j-1))
+        beta[i] = (j*(j-1)) // 2
+        nrbeta[i] = -1/beta[i]
     end
 
-    # Initially H == cvec
-    H = Matrix{Rational{Int}}(cvec)
+    # Initially hmat == cvec
+    hmat = Matrix{Rational{Int}}(cvec)
 
     # Cumulative sum, so i'th row is sum of i:n initial rows
     for i in n-1 : -1 : 1
         for j in 1:n
-            H[i,j] += H[i+1, j]
+            hmat[i,j] += hmat[i+1, j]
         end
     end
 
-    # Weight row i by nrbeta[i]
+    # Weight row i by -1/beta[i]
     for i in 1:n
         for j in 1:n
-            H[i,j] *= nrbeta[i]
+            hmat[i,j] *= nrbeta[i]
         end
     end
 
-    # Convert nrbeta into a vector of floats.
-    z = Vector{float_type}(nrbeta)
+    MatCoal(nLin,
+            Vector{float_type}(beta),
+            Vector{float_type}(nrbeta),
+            Matrix{float_type}(cvec),
+            Matrix{float_type}(hmat))
+end
 
-    # Convert H into a matrix of floats
-    hmat = UTriMatrix(n, x)
-
-    for i in 1:n
-        for j in i:n
-            hmat[i,j] = float_type(H[i,j])
-        end
-    end
-
-    MatCoal(nLin, beta, gmat, hmat, z)
+"Dimension of a MatCoal object."
+function dim(mc::MatCoal{T}) where {T <: AbstractFloat}
+    return length(mc.beta)
 end
 
 """
 Write a representation of an MatCoal to io.
 """
 function Base.show(io::IO, mc::MatCoal)
-    println(io, "nLin:", mc.nLin)
+    println(io, "nLineages:", mc.nLineages)
     print(io, "beta:")
     for b in mc.beta
         print(io, " ", b)
+    end
+    println(io)
+    print(io, "nrbeta:")
+    for nrb in mc.nrbeta
+        print(io, " ", nrb)
     end
     println(io)
     println(io, "gmat:")
     println(io, mc.gmat)
     println(io, "hmat:")
     println(io, mc.hmat)
-    print(io, "z:")
-    for z in mc.z
-        print(io, " ", z)
-    end
 end
 
+" Calculate eigenvalues for time v."
+function eigenvals!(eig::Vector{T}, v::T,
+                           mc::MatCoal{T}) where {T<:AbstractFloat}
+    dim = length(eig)
+    @assert dim == dim(mc)
+    for i in 1:dim
+        eig[i] = exp(-v*mc.beta[i]);
+    end
+    return eig
+end
+
+""" 
+Calculate the probability that there are 2,3,...(dim+1) lines of
+descent. Call eigenvals! first to calculate eig. The length of the
+interval affects the calculation only through its effect on the
+eigenvalues in eig, so it does not appear as an argument to project!.
+"""
+function project(ans::Vector{T}, eig::Vector{T},
+                 mc::MatCoal{T}) where {T <: AbstractFloat}
+    dim = length(ans)
+    @assert dim == length(eig)
+    @assert dim == dim(mc)
+
+    mul!(ans, mc.gmat, eig)
+end
+   
+"""
+Vector of expected lengths of coalescent intervals during which there
+were 2,3,...(dim+1) lines of descent. To get the expected length of
+the interval with 1 line of descent, subtract the sum of ans from v.
+Call eigenvals! first to calculate eig.  The length of the
+interval affects the calculation only via the eigenvalues in eig and
+therefore does not appear as an argument in interval_lengths;
+"""
+function interval_lengths!(ans::Vector{T}, eig::Vector{T},
+                 mc::MatCoal{T}) where {T <: AbstractFloat}
+    dim = length(ans)
+    @assert dim == length(eig)
+    @assert dim == dim(mc)
+
+    # ans = nrbeta + hmat*eig
+    copy!(ans, mc.nrbeta)
+    mul!(ans, mc.hmat, eig, 1, 1)
+end
 
 end
