@@ -1,8 +1,9 @@
-using StaticArrays
 
 module MatrixCoalescent
 
-export MatCoal
+using LinearAlgebra
+
+export MatCoal, eigenvals!, project!, interval_lengths!, dim
 
 """
 An object of type MatCoal holds the data needed to calculate two
@@ -126,10 +127,10 @@ end
 
 " Calculate eigenvalues for time v."
 function eigenvals!(eig::Vector{T}, v::T,
-                           mc::MatCoal{T}) where {T<:AbstractFloat}
-    dim = length(eig)
-    @assert dim == dim(mc)
-    for i in 1:dim
+                    mc::MatCoal{T}) where {T<:AbstractFloat}
+    n = length(eig)
+    @assert n == dim(mc)
+    for i in 1:n
         eig[i] = exp(-v*mc.beta[i]);
     end
     return eig
@@ -141,11 +142,10 @@ descent. Call eigenvals! first to calculate eig. The length of the
 interval affects the calculation only through its effect on the
 eigenvalues in eig, so it does not appear as an argument to project!.
 """
-function project(ans::Vector{T}, eig::Vector{T},
+function project!(ans::Vector{T}, eig::Vector{T},
                  mc::MatCoal{T}) where {T <: AbstractFloat}
-    dim = length(ans)
-    @assert dim == length(eig)
-    @assert dim == dim(mc)
+    @assert length(ans) == length(eig)
+    @assert length(ans) == dim(mc)
 
     mul!(ans, mc.gmat, eig)
 end
@@ -160,9 +160,8 @@ therefore does not appear as an argument in interval_lengths;
 """
 function interval_lengths!(ans::Vector{T}, eig::Vector{T},
                  mc::MatCoal{T}) where {T <: AbstractFloat}
-    dim = length(ans)
-    @assert dim == length(eig)
-    @assert dim == dim(mc)
+    @assert length(ans) == length(eig)
+    @assert length(ans) == dim(mc)
 
     # ans = nrbeta + hmat*eig
     copy!(ans, mc.nrbeta)
