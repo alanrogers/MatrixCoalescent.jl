@@ -21,8 +21,8 @@ mutable struct MatCoal{T<:AbstractFloat}
     beta :: Vector{T}
 
     # Vector for calculating E[len] of coalescent intervals
-    # Negative reciprocal of beta.
-    nrbeta :: Vector{T}
+    # Reciprocal of beta.
+    rbeta :: Vector{T}
 
     # Matrix of scaled column eigenvectors (upper triangular)
     gmat :: Matrix{T}
@@ -66,13 +66,13 @@ function MatCoal(float_type::DataType, nLineages)
         end
     end
 
-    # nrbeta[i] is negative reciprocal of beta[i] = (i+1) choose 2.
+    # rbeta[i] is reciprocal of beta[i] = (i+1) choose 2.
     beta = Vector{Rational{Int}}(undef, n)
-    nrbeta = Vector{Rational{Int}}(undef, n)
+    rbeta = Vector{Rational{Int}}(undef, n)
     for i in 1:n
         j = i+1
         beta[i] = (j*(j-1)) // 2
-        nrbeta[i] = -1/beta[i]
+        rbeta[i] = 1/beta[i]
     end
 
     # Initially hmat == cvec
@@ -88,13 +88,13 @@ function MatCoal(float_type::DataType, nLineages)
     # Weight row i by -1/beta[i]
     for i in 1:n
         for j in 1:n
-            hmat[i,j] *= nrbeta[i]
+            hmat[i,j] *= -rbeta[i]
         end
     end
 
     MatCoal(nLin,
             Vector{float_type}(beta),
-            Vector{float_type}(nrbeta),
+            Vector{float_type}(rbeta),
             Matrix{float_type}(cvec),
             Matrix{float_type}(hmat))
 end
@@ -114,8 +114,8 @@ function Base.show(io::IO, mc::MatCoal)
         print(io, " ", b)
     end
     println(io)
-    print(io, "nrbeta:")
-    for nrb in mc.nrbeta
+    print(io, "rbeta:")
+    for nrb in mc.rbeta
         print(io, " ", nrb)
     end
     println(io)
@@ -163,8 +163,8 @@ function interval_lengths!(ans::Vector{T}, eig::Vector{T},
     @assert length(ans) == length(eig)
     @assert length(ans) == dim(mc)
 
-    # ans = nrbeta + hmat*eig
-    copy!(ans, mc.nrbeta)
+    # ans = rbeta + hmat*eig
+    copy!(ans, mc.rbeta)
     mul!(ans, mc.hmat, eig, 1, 1)
 end
 
