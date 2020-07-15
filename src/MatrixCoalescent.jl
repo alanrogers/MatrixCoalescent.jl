@@ -33,9 +33,18 @@ mutable struct MatCoal{T<:Real}
 end
 
 """
-Outer constructor
+    MatCoal(el_type::DataType, nLineages)
+
+Construct an object of type `MatCoal`, which describes an epoch of
+population history during which the population's size was
+constant. The first argument is the type to be used in representing
+probabilities and expectations. The constructor will accept any Real
+type, but the other functions require a subtype of AbstractFloat. The
+second argument is the number of lineages at the recent end of this
+epoch of population history.  
 """
 function MatCoal(el_type::DataType, nLineages)
+
     nLin = Int(nLineages)
     n = nLin - 1
 
@@ -99,7 +108,10 @@ function MatCoal(el_type::DataType, nLineages)
             Matrix{el_type}(hmat))
 end
 
-"Dimension of a MatCoal object is mc.nLineages - 1."
+"""
+Dimension of a MatCoal object is 1 less than the number (nLin) of
+lineages at the recent end of the epoch.
+"""
 function dim(mc::MatCoal)
     return length(mc.beta)
 end
@@ -125,7 +137,17 @@ function Base.show(io::IO, mc::MatCoal)
     println(io, mc.hmat)
 end
 
-" Calculate eigenvalues for time v."
+"""
+    eigenvals!(eig::Vector{T}, v::T,
+                    mc::MatCoal{T}) where {T<:AbstractFloat}
+
+Calculate eigenvalues for time ``v``, where ``v = t/2N`` is time
+measured backwards from the recent end of the epoch in units of
+``2N`` generations. It represents the length of the epoch and may be
+0 or infinite. Time affects the coalescent process only via its effect
+on eigenvalues. Consequently, this is the only function that takes
+time as an argument.
+"""
 function eigenvals!(eig::Vector{T}, v::T,
                     mc::MatCoal{T}) where {T<:AbstractFloat}
     n = length(eig)
@@ -136,11 +158,15 @@ function eigenvals!(eig::Vector{T}, v::T,
     return eig
 end
 
-""" 
+"""
+    project!(ans::Vector{T}, eig::Vector{T},
+                 mc::MatCoal{T}) where {T <: AbstractFloat}
+
 Calculate the probability that there are 2,3,...(dim+1) lines of
-descent. Call eigenvals! first to calculate eig. The length of the
-interval affects the calculation only through its effect on the
-eigenvalues in eig, so it does not appear as an argument to project!.
+descent at the ancient end of the epoch. Call eigenvals! first to
+calculate eig. The length of the interval affects the calculation only
+through its effect on the eigenvalues in eig, so it does not appear as
+an argument to project!.
 """
 function project!(ans::Vector{T}, eig::Vector{T},
                  mc::MatCoal{T}) where {T <: AbstractFloat}
@@ -151,6 +177,9 @@ function project!(ans::Vector{T}, eig::Vector{T},
 end
    
 """
+    interval_lengths!(ans::Vector{T}, eig::Vector{T},
+                 mc::MatCoal{T}) where {T <: AbstractFloat}
+
 Vector of expected lengths of coalescent intervals during which there
 were 2,3,...(dim+1) lines of descent. To get the expected length of
 the interval with 1 line of descent, subtract the sum of ans from v,
