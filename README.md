@@ -5,17 +5,16 @@ lineages at the ancient end of an epoch of population history, given
 that there are *n* descendant lineages at the recent end. It also
 calculates the expected length of the interval during which there are
 *k* lineages, where 1 <= k <= n. The argument is based on a
-continuous-time Markov chain described in appendix I of [Tavare 1984]
-(http://www.damtp.cam.ac.uk/user/st321/CV_&_Publications_files/STpapers-pdf/T84a.pdf),
-[Griffiths and Tavare 1998]
-(https://www.tandfonline.com/doi/abs/10.1080/15326349808807471), and
-[Wooding and Rogers 2002]
-(https://www.genetics.org/content/161/4/1641.short).  The chain begins
-with a modern sample of *n* haploid lineages, sampled at the recent
-end of the epoch. As we trace the ancestry of this sample into the
-past, the original sample of *n* lineages falls to *n-1*, then *n-2*,
-and so on until only a single lineage is left, or we reach the end of
-the epoch.
+continuous-time Markov chain described in appendix I of
+[Tavare 1984](http://www.damtp.cam.ac.uk/user/st321/CV_&_Publications_files/STpapers-pdf/T84a.pdf),
+[Griffiths and Tavare 1998](https://www.tandfonline.com/doi/abs/10.1080/15326349808807471),
+and
+[Wooding and Rogers 2002](https://www.genetics.org/content/161/4/1641.short).
+The chain begins with a modern sample of *n* haploid lineages, sampled
+at the recent end of the epoch. As we trace the ancestry of this
+sample into the past, the original sample of *n* lineages falls to
+*n-1*, then *n-2*, and so on until only a single lineage is left, or
+we reach the end of the epoch.
 
 This Markov chain is well known, but it is not often used because
 accurate calculations are difficult with samples of even modest size.
