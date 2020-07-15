@@ -12,7 +12,7 @@ are k lineages at the ancient end of an epoch, given that there are
 nLineages at the recent end, and (2) the expected duration of the
 subinterval during which there are k lineages.
 """
-mutable struct MatCoal{T<:AbstractFloat}
+mutable struct MatCoal{T<:Real}
     nLineages :: Int # number of lineages at recent end of epoch
 
     # Vector of dimension nLin-1. beta[i] is (i+1) choose 2.  For
@@ -35,7 +35,7 @@ end
 """
 Outer constructor
 """
-function MatCoal(float_type::DataType, nLineages)
+function MatCoal(el_type::DataType, nLineages)
     nLin = Int(nLineages)
     n = nLin - 1
 
@@ -93,14 +93,14 @@ function MatCoal(float_type::DataType, nLineages)
     end
 
     MatCoal(nLin,
-            Vector{float_type}(beta),
-            Vector{float_type}(rbeta),
-            Matrix{float_type}(cvec),
-            Matrix{float_type}(hmat))
+            Vector{el_type}(beta),
+            Vector{el_type}(rbeta),
+            Matrix{el_type}(cvec),
+            Matrix{el_type}(hmat))
 end
 
-"Dimension of a MatCoal object."
-function dim(mc::MatCoal{T}) where {T <: AbstractFloat}
+"Dimension of a MatCoal object is mc.nLineages - 1."
+function dim(mc::MatCoal)
     return length(mc.beta)
 end
 
@@ -153,10 +153,11 @@ end
 """
 Vector of expected lengths of coalescent intervals during which there
 were 2,3,...(dim+1) lines of descent. To get the expected length of
-the interval with 1 line of descent, subtract the sum of ans from v.
-Call eigenvals! first to calculate eig.  The length of the
-interval affects the calculation only via the eigenvalues in eig and
-therefore does not appear as an argument in interval_lengths;
+the interval with 1 line of descent, subtract the sum of ans from v,
+where v is the time argument given to eigenvals!.  Call eigenvals!
+first to calculate eig.  The length of the interval affects the
+calculation only via the eigenvalues in eig and therefore does not
+appear as an argument in interval_lengths;
 """
 function interval_lengths!(ans::Vector{T}, eig::Vector{T},
                  mc::MatCoal{T}) where {T <: AbstractFloat}
