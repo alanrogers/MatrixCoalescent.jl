@@ -15,9 +15,9 @@ subinterval during which there are k lineages.
 mutable struct MatCoal{T<:Real}
     nLineages :: Int # number of lineages at recent end of epoch
 
-    # Vector of dimension nLin-1. beta[i] is (i+1) choose 2.  For
-    # example, if nLineages=3, then beta has two entries: 2 choose 2 and 3
-    # choose 2.
+    # Vector of dimension nLineages-1. beta[i] is (i+1) choose 2.  For
+    # example, if nLineages=3, then beta has two entries: 2 choose 2
+    # and 3 choose 2.
     beta :: Vector{T}
 
     # Vector for calculating E[len] of coalescent intervals
@@ -28,7 +28,7 @@ mutable struct MatCoal{T<:Real}
     gmat :: Matrix{T}
 
     # Matrix for calculating expected lengths of coalescent intervals.
-    # Also upper triangular
+    # Also upper triangular.
     hmat :: Matrix{T}
 end
 
@@ -198,4 +198,4 @@ function interval_lengths!(ans::Vector{T}, eig::Vector{T},
     mul!(ans, mc.hmat, eig, 1, 1)
 end
 
-end
+end # module
